@@ -1,0 +1,22 @@
+{
+  "name": "Manman Sol",
+  "short_name": "Manman Sol",
+  "description": "Jere Sol ou ak fasilite, sekirize ak pwofesyonèl.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#04041a",
+  "theme_color": "#04041a",
+  "orientation": "portrait",
+  "categories": ["finance", "utilities"],
+  "lang": "ht",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    { "name": "Dashboard", "url": "/dashboard", "description": "Wè estatistik ou" },
+    { "name": "Sol Yo",    "url": "/sol",       "description": "Tout sol ou yo" },
+    { "name": "Kreye Sol", "url": "/sol/kreye", "description": "Kreye yon nouvo sol" }
+  ]
+}

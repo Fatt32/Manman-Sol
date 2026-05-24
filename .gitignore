@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Environment variables — NEVER commit these
+.env
+.env.local
+.env.*.local
+
+# Data files — local only, do NOT commit real user data
+data/
+
+# Build artifacts
+*.tsbuildinfo
+next-env.d.ts
+
+# OS
+.DS_Store
+Thumbs.db
