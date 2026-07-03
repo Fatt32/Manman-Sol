@@ -46,7 +46,7 @@ export default function PemanPage({ params }: { params: Promise<{ id: string }> 
     setSaving(true)
     const res = await fetch(`/api/sol/${id}/peman`, {
       method: 'POST', headers: h,
-      body: JSON.stringify({ userId: manm.userId, peryòd, metòd, note }),
+      body: JSON.stringify({ userId: manm.userId, entryId: manm.entryId, peryòd, metòd, note }),
     })
     if (res.ok) { setShowForm(null); setNote(''); load() }
     setSaving(false)
@@ -60,13 +60,29 @@ export default function PemanPage({ params }: { params: Promise<{ id: string }> 
 
   const isChef = sol.chefId === user.id || user.role === 'admin'
   const maxPeryòd = sol.maxManm
-  const paidIds = new Set(peman.filter(p => p.peryòd === peryòd && p.status === 'peye').map(p => p.userId))
 
-  /* Deduplicate members by userId — payment is per person, not per slot */
-  const uniqueManm = (() => {
-    const seen = new Set<string>()
-    return sol.manm.filter(m => { if (seen.has(m.userId)) return false; seen.add(m.userId); return true })
-  })()
+  // Helper to check if a specific member slot has paid for a specific period
+  const isSlotPaid = (m: SolManm, p: number) => {
+    const userSlots = sol.manm.filter(x => x.userId === m.userId)
+    const slotIndex = userSlots.findIndex(x => x.entryId === m.entryId)
+    const userPayments = peman.filter(pm => pm.userId === m.userId && pm.peryòd === p && pm.status === 'peye')
+    
+    const hasExplicit = userPayments.some(pm => pm.entryId === m.entryId)
+    if (hasExplicit) return true
+
+    return userPayments.length > slotIndex
+  }
+
+  const getManmName = (m: SolManm) => {
+    const matches = sol.manm.filter(x => x.userId === m.userId)
+    if (matches.length > 1) {
+      const idx = matches.findIndex(x => x.entryId === m.entryId)
+      return `${m.prenom} ${m.nom} (Men #${idx + 1})`
+    }
+    return `${m.prenom} ${m.nom}`
+  }
+
+  const sortedManm = [...sol.manm].sort((a,b) => (a.pozisyon||999) - (b.pozisyon||999))
 
   return (
     <div className="max-w-md mx-auto space-y-5">
@@ -120,9 +136,12 @@ export default function PemanPage({ params }: { params: Promise<{ id: string }> 
 
       {/* Members payment list */}
       <div className="space-y-2">
-        {uniqueManm.map((m, i) => {
-          const paid = paidIds.has(m.userId)
-          const pemanRecord = peman.find(p => p.userId === m.userId && p.peryòd === peryòd)
+        {sortedManm.map((m, i) => {
+          const paid = isSlotPaid(m, peryòd)
+          const userSlots = sol.manm.filter(x => x.userId === m.userId)
+          const slotIndex = userSlots.findIndex(x => x.entryId === m.entryId)
+          const userPayments = peman.filter(p => p.userId === m.userId && p.peryòd === peryòd && p.status === 'peye')
+          const pemanRecord = userPayments.find(p => p.entryId === m.entryId) || userPayments[slotIndex]
           const color = COLORS[i % COLORS.length]
 
           return (
@@ -141,7 +160,7 @@ export default function PemanPage({ params }: { params: Promise<{ id: string }> 
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="text-white font-semibold text-sm truncate">{m.prenom} {m.nom}</div>
+                    <div className="text-white font-semibold text-sm truncate">{getManmName(m)}</div>
                     {pemanRecord
                       ? <div className="text-white/40 text-xs">{fmtDate(pemanRecord.datePeman)} • {pemanRecord.metòd}</div>
                       : <div className="text-white/30 text-xs">Poko peye</div>

@@ -214,7 +214,7 @@ export default function TirajPage({ params }: { params: Promise<{ id: string }> 
           </div>
           <div className="space-y-2">
             {existingOrder.map((m, i) => (
-              <div key={m.userId}
+              <div key={m.entryId || i}
                 className="glass rounded-2xl p-3.5 flex items-center gap-3 border"
                 style={{ borderColor: i===0 ? 'rgba(252,211,77,.3)' : 'rgba(255,255,255,.08)' }}>
                 <div style={{

@@ -84,7 +84,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Pa otorize' }, { status: 403 })
 
     const solAge = Date.now() - new Date(sol.createdAt).getTime()
-    if (solAge < 24 * 60 * 60 * 1000)
+    if (solAge < 24 * 60 * 60 * 1000 && user.role !== 'admin')
       return NextResponse.json({ error: 'Sol la fenk kreye. Tann 24 èdtan anvan premye peman.' }, { status: 403 })
 
     const targetUserId = bodyUserId || user.id

@@ -20,8 +20,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (user.role !== 'admin' && sol.chefId !== user.id)
     return NextResponse.json({ error: 'Pa otorize' }, { status: 403 })
 
-  if (sol.manm.length >= sol.maxManm)
-    return NextResponse.json({ error: `Sol la plen (${sol.maxManm} plas). Pa kapab ajoute plis.` }, { status: 409 })
+  if (sol.manm.length >= sol.maxManm) {
+    if (user.role === 'admin') {
+      sol.maxManm = sol.manm.length + 1
+    } else {
+      return NextResponse.json({ error: `Sol la plen (${sol.maxManm} plas). Pa kapab ajoute plis.` }, { status: 409 })
+    }
+  }
 
   const body = await req.json()
 
@@ -117,7 +122,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (target) {
     const touche = await readJSON<ToucheRecord[]>('touche.json', [])
     const hasReceived = touche.some(r => r.solId === id && r.userId === target.userId && r.status === 'konfime')
-    if (hasReceived)
+    if (hasReceived && user.role !== 'admin')
       return NextResponse.json({ error: 'Pa ka retire manm sa — li deja touche sak la.' }, { status: 409 })
   }
 

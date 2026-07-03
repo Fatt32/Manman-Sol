@@ -81,13 +81,32 @@ export function fmtPeryod(dateDebut: string, frequence: Frequence, peryod: numbe
 
 export function pwochènDatePeman(dateDebut: string, peryòd: number, frequence: Frequence): Date {
   const d = new Date(dateDebut)
+  if (frequence === 'chak-mwa') {
+    // Period starts on the 1st of the month
+    const startMonth = d.getMonth() + (peryòd - 1)
+    const startYear = d.getFullYear() + Math.floor(startMonth / 12)
+    const realMonth = ((startMonth % 12) + 12) % 12
+    return new Date(startYear, realMonth, 1)
+  }
   if      (frequence === 'chak-semèn') d.setDate(d.getDate()       + 7  * (peryòd - 1))
   else if (frequence === 'de-semèn')   d.setDate(d.getDate()       + 14 * (peryòd - 1))
-  else if (frequence === 'chak-mwa')   d.setMonth(d.getMonth()     + (peryòd - 1))
   else if (frequence === '3-mwa')      d.setMonth(d.getMonth()     + 3  * (peryòd - 1))
   else if (frequence === '6-mwa')      d.setMonth(d.getMonth()     + 6  * (peryòd - 1))
   else if (frequence === 'ane')        d.setFullYear(d.getFullYear()+ (peryòd - 1))
   return d
+}
+
+/** Returns the last day of the month for the given period (deadline) */
+export function dateLimitPeryod(dateDebut: string, peryòd: number, frequence: Frequence): Date {
+  const start = pwochènDatePeman(dateDebut, peryòd, frequence)
+  if (frequence === 'chak-mwa') {
+    // Last day of the same month
+    return new Date(start.getFullYear(), start.getMonth() + 1, 0)
+  }
+  // For other frequencies, deadline is the day before next period starts
+  const next = pwochènDatePeman(dateDebut, peryòd + 1, frequence)
+  next.setDate(next.getDate() - 1)
+  return next
 }
 
 export function getInitials(prenom: string, nom: string): string {
@@ -105,7 +124,21 @@ export function setCookie(name: string, value: string, days = 30): void {
   const exp = new Date(Date.now() + days * 864e5).toUTCString()
   document.cookie = `${name}=${encodeURIComponent(value)}; expires=${exp}; path=/; SameSite=Lax`
 }
-
 export function deleteCookie(name: string): void {
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`
 }
+export function getPeryodKouran(dateDebut: string, frequence: Frequence, maxManm: number): number {
+  const jodia = new Date()
+  jodia.setHours(0, 0, 0, 0)
+
+  // Find the highest period p where start date is <= today
+  for (let p = maxManm; p >= 1; p--) {
+    const dStart = pwochènDatePeman(dateDebut, p, frequence)
+    dStart.setHours(0, 0, 0, 0)
+    if (jodia >= dStart) {
+      return p
+    }
+  }
+  return 1 // Fallback to period 1
+}
+

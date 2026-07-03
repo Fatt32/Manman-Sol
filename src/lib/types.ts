@@ -70,6 +70,7 @@ export interface Peman {
   id:        string
   solId:     string
   userId:    string
+  entryId?:  string
   prenom:    string
   nom:       string
   peryòd:    number

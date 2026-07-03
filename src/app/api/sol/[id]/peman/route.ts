@@ -46,21 +46,26 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (user.role !== 'admin' && sol.chefId !== user.id)
     return NextResponse.json({ error: 'Sèlman chef sol ak admin ka anrejistre peman' }, { status: 403 })
 
-  const { userId, peryòd, metòd, note } = await req.json()
+  const { userId, entryId, peryòd, metòd, note } = await req.json()
   if (!userId || !peryòd || !metòd)
     return NextResponse.json({ error: 'Champ manke' }, { status: 400 })
 
-  const manm = sol.manm.find(m => m.userId === userId)
+  const manm = entryId 
+    ? sol.manm.find(m => m.entryId === entryId)
+    : sol.manm.find(m => m.userId === userId)
   if (!manm) return NextResponse.json({ error: 'Moun sa a pa nan sol la' }, { status: 404 })
 
   const peman  = await getPeman()
-  const exists = peman.find(p => p.solId === id && p.userId === userId && p.peryòd === Number(peryòd))
+  const exists = entryId
+    ? peman.find(p => p.solId === id && p.entryId === entryId && p.peryòd === Number(peryòd))
+    : peman.find(p => p.solId === id && p.userId === userId && p.peryòd === Number(peryòd))
   if (exists) return NextResponse.json({ error: 'Peman sa a deja anrejistre' }, { status: 409 })
 
   const newPeman: Peman = {
     id:        genId(),
     solId:     id,
     userId,
+    entryId:   manm.entryId,
     prenom:    manm.prenom,
     nom:       manm.nom,
     peryòd:    Number(peryòd),
