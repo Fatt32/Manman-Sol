@@ -210,6 +210,14 @@ export default function SolDetailPage({ params }: { params: Promise<{ id: string
     return `${MWA_LONG[date.getMonth()]} ${date.getFullYear()}`
   }
 
+  const getRetaDaysText = (dateLimit: Date) => {
+    const diffTime = Date.now() - dateLimit.getTime()
+    if (diffTime <= 0) return ''
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+    if (diffDays === 0) return ' (Jodi a)'
+    return ` (${diffDays} ${diffDays === 1 ? 'jou' : 'jou'} reta)`
+  }
+
   async function konfimeTouche(targetUserId: string, peryod: number) {
     setToucheSaving(true)
     const token = getCookie('sol_token')
@@ -478,7 +486,7 @@ export default function SolDetailPage({ params }: { params: Promise<{ id: string
                       <div key={idx} className="bg-red-950/20 border border-red-900/30 rounded-xl p-2.5 text-xs">
                         <div className="flex justify-between text-red-300 font-semibold mb-1">
                           <span>Peryòd {rp.peryod}</span>
-                          <span>Limit: {fmtDate(rp.dateLimit.toISOString())}</span>
+                           <span>Limit: {fmtDate(rp.dateLimit.toISOString())}{getRetaDaysText(rp.dateLimit)}</span>
                         </div>
                         <div className="text-white/75 space-y-1 mt-1.5">
                           {rp.manm.map(m => (
@@ -510,7 +518,7 @@ export default function SolDetailPage({ params }: { params: Promise<{ id: string
                       <div key={idx} className="bg-orange-950/20 border border-orange-900/30 rounded-xl p-2.5 text-xs">
                         <div className="flex justify-between text-orange-300 font-semibold mb-1">
                           <span>Peryòd {rt.peryod}</span>
-                          <span>Limit: {fmtDate(rt.dateLimit.toISOString())}</span>
+                           <span>Limit: {fmtDate(rt.dateLimit.toISOString())}{getRetaDaysText(rt.dateLimit)}</span>
                         </div>
                         <div className="flex items-center justify-between text-white/75 mt-1.5">
                           <span>{getManmName(rt.recipient)}</span>
