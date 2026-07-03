@@ -134,8 +134,20 @@ export default function SolDetailPage({ params }: { params: Promise<{ id: string
   const peryodKouran = getPeryodKouran(sol.dateDebut, sol.frequence, sol.manm.length || sol.maxManm)
   const unpaidManm = sol.manm.filter(m => !isSlotPaid(m, peryodKouran))
 
-  const currentManmForPeriod = sol.manm.find(m => m.pozisyon === sol.peryòdAktif)
-  const currentTouche        = touche.find(r => r.peryòd === sol.peryòdAktif && r.userId === currentManmForPeriod?.userId)
+  const activePayoutPeriod = (() => {
+    if (!sol.tirajFèt || sol.manm.length === 0) return 1
+    for (let p = 1; p <= sol.manm.length; p++) {
+      const recipient = sol.manm.find(m => m.pozisyon === p)
+      if (recipient) {
+        const isPaid = touche.some(r => r.peryòd === p && r.status === 'konfime' && r.userId === recipient.userId)
+        if (!isPaid) return p
+      }
+    }
+    return sol.manm.length || 1
+  })()
+
+  const currentManmForPeriod = sol.manm.find(m => m.pozisyon === activePayoutPeriod)
+  const currentTouche        = touche.find(r => r.peryòd === activePayoutPeriod && r.userId === currentManmForPeriod?.userId)
   const totalSakPeryod       = sol.montant * sol.manm.length
   const myTurn               = currentManmForPeriod?.userId === user.id && !isChef
   const toucheKonfime        = currentTouche?.status === 'konfime'
@@ -261,7 +273,7 @@ export default function SolDetailPage({ params }: { params: Promise<{ id: string
           {toucheKonfime ? 'Moun ki deja touche yo' : myTurn ? '🎉 Se tou pa w!' : 'Ki moun ki pral touche?'}
         </p>
         {!toucheKonfime && (
-          <span className="ml-auto text-white/35 text-xs">{fmtPeryod(sol.dateDebut, sol.frequence, sol.peryòdAktif)}</span>
+          <span className="ml-auto text-white/35 text-xs">{fmtPeryod(sol.dateDebut, sol.frequence, activePayoutPeriod)}</span>
         )}
         {toucheDemande && !toucheKonfime && (
           <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ background:'rgba(251,146,60,.15)', color:'#FB923C', border:'1px solid rgba(251,146,60,.3)' }}>Mande</span>
@@ -296,8 +308,74 @@ export default function SolDetailPage({ params }: { params: Promise<{ id: string
         </div>
       )}
 
-      {toucheKonfime ? (
-        <div className="space-y-2 mt-2 pt-2">
+      {/* Detail / Action Block: only show if current period is not confirmed */}
+      {!toucheKonfime && (
+        solTooNew && isChef ? (
+          <div className="flex items-center gap-2 py-2.5 px-3 rounded-xl text-xs font-semibold"
+            style={{ background:'rgba(251,146,60,.1)', border:'1px solid rgba(251,146,60,.25)', color:'#FB923C' }}>
+            <AlertCircle size={14} />
+            <span>Sol la fenk kreye. Tann 24 èdtan anvan premye peman.</span>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {isChef && (
+              toucheFormOpen ? (
+                <div className="space-y-2 pt-2 border-t border-white/8">
+                  <div className="grid grid-cols-2 gap-2">
+                    {METOD.map(met => (
+                      <button key={met} onClick={() => setToucheMetod(met)}
+                        className="py-2 rounded-xl text-xs font-bold transition-all border"
+                        style={toucheMetod === met
+                          ? { background:'rgba(52,211,153,.2)', borderColor:'rgba(52,211,153,.5)', color:'#34D399' }
+                          : { background:'rgba(255,255,255,.05)', borderColor:'rgba(255,255,255,.08)', color:'rgba(255,255,255,.5)' }}>
+                        {met}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="glass rounded-xl px-3 py-2 border border-white/8">
+                    <input value={toucheNote} onChange={e => setToucheNote(e.target.value)}
+                      placeholder="Nòt (opsyonèl)"
+                      className="w-full bg-transparent text-white/80 placeholder-white/30 outline-none text-sm" />
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => setToucheFormOpen(false)}
+                      className="glass px-4 py-2.5 rounded-xl text-white/50 border border-white/8">
+                      <X size={14} />
+                    </button>
+                    <button onClick={() => konfimeTouche(currentManmForPeriod.userId, activePayoutPeriod)}
+                      disabled={toucheSaving}
+                      className="flex-1 py-2.5 rounded-xl text-white font-bold text-sm disabled:opacity-60"
+                      style={{ background:'linear-gradient(135deg,#34D399,#059669)', boxShadow:'0 4px 12px rgba(52,211,153,.35)' }}>
+                      {toucheSaving ? 'Ap konfime…' : `✓ Konfime ${fmtMontan(totalSakPeryod, sol.devis)}`}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setToucheFormOpen(true)}
+                  className="w-full py-3 rounded-xl text-white font-bold text-sm"
+                  style={{ background:'linear-gradient(135deg,#34D399,#059669)', boxShadow:'0 4px 12px rgba(52,211,153,.35)' }}>
+                  💰 Konfime Peman Touche
+                </button>
+              )
+            )}
+            {myTurn && (
+              <button onClick={() => konfimeTouche(user.id, activePayoutPeriod)}
+                disabled={toucheSaving}
+                className="w-full py-3 rounded-xl text-white font-bold text-sm disabled:opacity-60"
+                style={{ background:'linear-gradient(135deg,#A855F7,#7C3AED)', boxShadow:'0 4px 12px rgba(168,85,247,.35)' }}>
+                {toucheSaving ? 'Ap konfime…' : '✓ Mwen Touche Sak La'}
+              </button>
+            )}
+          </div>
+        )
+      )}
+
+      {/* History list: always show if there are confirmed payouts */}
+      {confirmedPayouts.length > 0 && (
+        <div className="space-y-2 mt-2 pt-2 border-t border-white/5">
+          {toucheKonfime && (
+            <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider">Moun ki deja touche yo:</p>
+          )}
           <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
             {confirmedPayouts.map((cp, i) => {
               const name = cp.recipient ? getManmName(cp.recipient) : 'Manm'
@@ -331,63 +409,6 @@ export default function SolDetailPage({ params }: { params: Promise<{ id: string
             })}
           </div>
         </div>
-      ) : solTooNew && isChef ? (
-        <div className="flex items-center gap-2 py-2.5 px-3 rounded-xl text-xs font-semibold"
-          style={{ background:'rgba(251,146,60,.1)', border:'1px solid rgba(251,146,60,.25)', color:'#FB923C' }}>
-          <AlertCircle size={14} />
-          <span>Sol la fenk kreye. Tann 24 èdtan anvan premye peman.</span>
-        </div>
-      ) : (
-        <>
-          {isChef && (
-            toucheFormOpen ? (
-              <div className="space-y-2 pt-2 border-t border-white/8">
-                <div className="grid grid-cols-2 gap-2">
-                  {METOD.map(met => (
-                    <button key={met} onClick={() => setToucheMetod(met)}
-                      className="py-2 rounded-xl text-xs font-bold transition-all border"
-                      style={toucheMetod === met
-                        ? { background:'rgba(52,211,153,.2)', borderColor:'rgba(52,211,153,.5)', color:'#34D399' }
-                        : { background:'rgba(255,255,255,.05)', borderColor:'rgba(255,255,255,.08)', color:'rgba(255,255,255,.5)' }}>
-                      {met}
-                    </button>
-                  ))}
-                </div>
-                <div className="glass rounded-xl px-3 py-2 border border-white/8">
-                  <input value={toucheNote} onChange={e => setToucheNote(e.target.value)}
-                    placeholder="Nòt (opsyonèl)"
-                    className="w-full bg-transparent text-white/80 placeholder-white/30 outline-none text-sm" />
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => setToucheFormOpen(false)}
-                    className="glass px-4 py-2.5 rounded-xl text-white/50 border border-white/8">
-                    <X size={14} />
-                  </button>
-                  <button onClick={() => konfimeTouche(currentManmForPeriod.userId, sol.peryòdAktif)}
-                    disabled={toucheSaving}
-                    className="flex-1 py-2.5 rounded-xl text-white font-bold text-sm disabled:opacity-60"
-                    style={{ background:'linear-gradient(135deg,#34D399,#059669)', boxShadow:'0 4px 12px rgba(52,211,153,.35)' }}>
-                    {toucheSaving ? 'Ap konfime…' : `✓ Konfime ${fmtMontan(totalSakPeryod, sol.devis)}`}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button onClick={() => setToucheFormOpen(true)}
-                className="w-full py-3 rounded-xl text-white font-bold text-sm"
-                style={{ background:'linear-gradient(135deg,#34D399,#059669)', boxShadow:'0 4px 12px rgba(52,211,153,.35)' }}>
-                💰 Konfime Peman Touche
-              </button>
-            )
-          )}
-          {myTurn && (
-            <button onClick={() => konfimeTouche(user.id, sol.peryòdAktif)}
-              disabled={toucheSaving}
-              className="w-full py-3 rounded-xl text-white font-bold text-sm disabled:opacity-60"
-              style={{ background:'linear-gradient(135deg,#A855F7,#7C3AED)', boxShadow:'0 4px 12px rgba(168,85,247,.35)' }}>
-              {toucheSaving ? 'Ap konfime…' : '✓ Mwen Touche Sak La'}
-            </button>
-          )}
-        </>
       )}
     </motion.div>
   ) : null
