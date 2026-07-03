@@ -32,7 +32,7 @@ export function fmtDate(iso: string): string {
 }
 
 export function fmtPeryod(dateDebut: string, frequence: Frequence, peryod: number): string {
-  const s = new Date(dateDebut)
+  const s = new Date(dateDebut.replace(/-/g, '/'))
 
   if (frequence === 'chak-semèn') {
     const d = new Date(s); d.setDate(d.getDate() + 7 * (peryod - 1))
@@ -80,7 +80,7 @@ export function fmtPeryod(dateDebut: string, frequence: Frequence, peryod: numbe
 }
 
 export function pwochènDatePeman(dateDebut: string, peryòd: number, frequence: Frequence): Date {
-  const d = new Date(dateDebut)
+  const d = new Date(dateDebut.replace(/-/g, '/'))
   if (frequence === 'chak-mwa') {
     // Period starts on the 1st of the month
     const startMonth = d.getMonth() + (peryòd - 1)
