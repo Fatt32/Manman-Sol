@@ -135,7 +135,7 @@ export default function SolDetailPage({ params }: { params: Promise<{ id: string
   const unpaidManm = sol.manm.filter(m => !isSlotPaid(m, peryodKouran))
 
   const currentManmForPeriod = sol.manm.find(m => m.pozisyon === sol.peryòdAktif)
-  const currentTouche        = touche.find(r => r.peryòd === sol.peryòdAktif)
+  const currentTouche        = touche.find(r => r.peryòd === sol.peryòdAktif && r.userId === currentManmForPeriod?.userId)
   const totalSakPeryod       = sol.montant * sol.manm.length
   const myTurn               = currentManmForPeriod?.userId === user.id && !isChef
   const toucheKonfime        = currentTouche?.status === 'konfime'
@@ -178,7 +178,10 @@ export default function SolDetailPage({ params }: { params: Promise<{ id: string
   const { retaPeman, retaTouche } = checkReta()
 
   const confirmedPayouts = touche
-    .filter(r => r.status === 'konfime')
+    .filter(r => {
+      const recipient = sol.manm.find(m => m.pozisyon === r.peryòd)
+      return r.status === 'konfime' && recipient && r.userId === recipient.userId
+    })
     .map(r => {
       const recipient = sol.manm.find(m => m.pozisyon === r.peryòd)
       return { ...r, recipient }
@@ -192,13 +195,11 @@ export default function SolDetailPage({ params }: { params: Promise<{ id: string
   const dynamicNextRecipient = (() => {
     if (!sol.tirajFèt || sol.manm.length === 0) return null
     for (let p = 1; p <= sol.manm.length; p++) {
-      const isPaid = touche.some(r => r.peryòd === p && r.status === 'konfime')
-      if (!isPaid) {
-        const recipient = sol.manm.find(m => m.pozisyon === p)
-        if (recipient) {
-          const pDate = pwochènDatePeman(sol.dateDebut, p, sol.frequence)
-          return { recipient, peryod: p, date: pDate }
-        }
+      const recipient = sol.manm.find(m => m.pozisyon === p)
+      const isPaid = recipient && touche.some(r => r.peryòd === p && r.status === 'konfime' && r.userId === recipient.userId)
+      if (!isPaid && recipient) {
+        const pDate = pwochènDatePeman(sol.dateDebut, p, sol.frequence)
+        return { recipient, peryod: p, date: pDate }
       }
     }
     return null
