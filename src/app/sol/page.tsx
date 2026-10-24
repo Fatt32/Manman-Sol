@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Search, PlusCircle, Coins, Users, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { getCookie, fmtMontan, fmtFrequence } from '@/lib/utils'
+import { getCookie, AUTH_COOKIE, fmtMontan, fmtFrequence } from '@/lib/utils'
 import type { Sol } from '@/lib/types'
 
 const COLORS = ['#FF3DA0','#A855F7','#38BDF8','#34D399','#FCD34D','#FB923C']
@@ -33,9 +33,9 @@ export default function SolListPage() {
   const [filter, setFilter] = useState<'tout'|'aktif'|'annatant'|'konplè'>('tout')
 
   useEffect(() => {
-    const token = getCookie('sol_token')
+    const token = getCookie(AUTH_COOKIE)
     if (!token) return
-    fetch('/api/sol', { headers: { Authorization: `Bearer ${token}` } })
+    fetch('/api/sol')
       .then(r => r.json()).then(d => setSols(d.sols || []))
   }, [])
 

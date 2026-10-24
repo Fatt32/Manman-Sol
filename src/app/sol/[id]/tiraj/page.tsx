@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Shuffle, Trophy, Crown, Sparkles } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { getCookie, getInitials } from '@/lib/utils'
+import { getCookie, AUTH_COOKIE, getInitials } from '@/lib/utils'
 import type { Sol } from '@/lib/types'
 
 const COLORS = ['#FF3DA0','#A855F7','#38BDF8','#34D399','#FCD34D','#FB923C']
@@ -22,11 +22,11 @@ export default function TirajPage({ params }: { params: Promise<{ id: string }> 
   const [err, setErr]       = useState('')
   const confettiRef         = useRef(false)
 
-  const token = getCookie('sol_token')
+  const token = getCookie(AUTH_COOKIE)
 
   useEffect(() => {
     if (!token) return
-    fetch(`/api/sol/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`/api/sol/${id}`)
       .then(r => r.json()).then(d => { if (d.sol) setSol(d.sol) })
   }, [id, token])
 
@@ -58,7 +58,7 @@ export default function TirajPage({ params }: { params: Promise<{ id: string }> 
     try {
       const res = await fetch(`/api/sol/${id}/tiraj`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type':'application/json' },
+        headers: { 'Content-Type':'application/json' },
       })
       const data = await res.json()
       if (!res.ok) { setErr(data.error || 'Erè tiraj'); setPhase('idle'); return }
@@ -67,7 +67,7 @@ export default function TirajPage({ params }: { params: Promise<{ id: string }> 
       /* Let spinner run 2.5s then reveal */
       setTimeout(() => { setPhase('reveal'); setRevealed(0) }, 2500)
       /* Reload sol to get updated positions */
-      fetch(`/api/sol/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+      fetch(`/api/sol/${id}`)
         .then(r => r.json()).then(d => { if (d.sol) setSol(d.sol) })
     } catch { setErr('Erè rezo'); setPhase('idle') }
   }

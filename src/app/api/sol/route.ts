@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@/lib/auth'
+import { getAuthUser } from '@/lib/auth'
 import { readJSON, writeJSON, genId } from '@/lib/db'
 import type { Sol } from '@/lib/types'
+import { solUpdateSchema } from '@/lib/sol-update'
 
 async function getSols() { return readJSON<Sol[]>('sols.json', []) }
 async function saveSols(s: Sol[]) { await writeJSON('sols.json', s) }
 
 export async function GET(req: NextRequest) {
-  const token = req.headers.get('authorization')?.replace('Bearer ','')
-  const user  = token ? verifyToken(token) : null
+  const user = await getAuthUser(req)
   if (!user) return NextResponse.json({ error: 'Pa otorize' }, { status: 401 })
 
   const sols = await getSols()
@@ -32,8 +32,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const token = req.headers.get('authorization')?.replace('Bearer ','')
-  const user  = token ? verifyToken(token) : null
+  const user = await getAuthUser(req)
   if (!user) return NextResponse.json({ error: 'Pa otorize' }, { status: 401 })
   if (user.role === 'manm') return NextResponse.json({ error: 'Sèlman admin/chef ka kreye sol' }, { status: 403 })
 
@@ -41,6 +40,9 @@ export async function POST(req: NextRequest) {
   const { nom, description, montant, devis, frequence, maxManm } = body
   if (!nom || !montant || !frequence || !maxManm)
     return NextResponse.json({ error: 'Champ manke' }, { status: 400 })
+  const check = solUpdateSchema.safeParse({ nom, frequence, maxManm: Number(maxManm), devis: devis || 'HTG' })
+  if (!check.success || !(Number(montant) > 0))
+    return NextResponse.json({ error: 'Done sol la pa valid' }, { status: 400 })
 
   const sol: Sol = {
     id:          genId(),

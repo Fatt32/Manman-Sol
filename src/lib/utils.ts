@@ -143,3 +143,11 @@ export function getPeryodKouran(dateDebut: string, frequence: Frequence, maxManm
   return 1 // Fallback to period 1
 }
 
+
+/* Readable flag set by the server next to the httpOnly session cookie.
+ * Tells the browser "you are logged in"; it is not a credential. */
+export const AUTH_COOKIE = 'sol_auth'
+
+export async function logout(): Promise<void> {
+  await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
+}

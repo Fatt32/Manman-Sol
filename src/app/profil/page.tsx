@@ -8,7 +8,7 @@ import {
   Pencil, X, Check, Eye, EyeOff, Lock,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { getCookie, setCookie, deleteCookie, fmtDate, getInitials } from '@/lib/utils'
+import { getCookie, AUTH_COOKIE, logout, fmtDate, getInitials } from '@/lib/utils'
 
 const ROLE_LABEL: Record<string,string> = { admin:'Administratè', chef:'Chef Sol', manm:'Manm' }
 const ROLE_COLOR: Record<string,string> = { admin:'#FF3DA0', chef:'#A855F7', manm:'#38BDF8' }
@@ -53,13 +53,13 @@ export default function ProfilPage() {
     if (form.nouveauModpas && form.nouveauModpas !== form.konfimeModpas) {
       setMsg({ text:'Nouvo modpas ak konfirmasyon pa matche.', ok:false }); return
     }
-    if (form.nouveauModpas && form.nouveauModpas.length < 4) {
-      setMsg({ text:'Nouvo modpas dwe gen omwen 4 karaktè.', ok:false }); return
+    if (form.nouveauModpas && form.nouveauModpas.length < 6) {
+      setMsg({ text:'Nouvo modpas dwe gen omwen 6 karaktè.', ok:false }); return
     }
 
     setSaving(true); setMsg(null)
     try {
-      const token = getCookie('sol_token')
+      const token = getCookie(AUTH_COOKIE)
       const body: Record<string,string> = {
         prenom:       form.prenom.trim(),
         nom:          form.nom.trim(),
@@ -73,14 +73,12 @@ export default function ProfilPage() {
 
       const res  = await fetch('/api/profil', {
         method:'PUT',
-        headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json' },
+        headers:{ 'Content-Type':'application/json' },
         body: JSON.stringify(body),
       })
       const data = await res.json()
       if (!res.ok) { setMsg({ text: data.error || 'Erè', ok:false }); return }
 
-      /* Save the fresh token and reload */
-      setCookie('sol_token', data.token, 30)
       setMsg({ text:'Pwofil ou mete ajou avèk siksè!', ok:true })
       setEditing(false)
       router.refresh()
@@ -91,8 +89,8 @@ export default function ProfilPage() {
     }
   }
 
-  function logout() {
-    deleteCookie('sol_token')
+  async function handleLogout() {
+    await logout()
     router.push('/koneksyon')
   }
 
@@ -269,7 +267,7 @@ export default function ProfilPage() {
                 className="flex-1 glass py-3 rounded-xl text-white/50 font-semibold border border-white/15 text-sm">
                 Anile
               </button>
-              <button onClick={logout}
+              <button onClick={handleLogout}
                 className="flex-1 py-3 rounded-xl text-white font-bold text-sm"
                 style={{ background:'linear-gradient(135deg,#EF4444,#DC2626)', boxShadow:'0 4px 12px rgba(239,68,68,.4)' }}>
                 Wi, Dekonekte

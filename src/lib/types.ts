@@ -14,6 +14,7 @@ export interface User {
   /* Password reset */
   resetCode?:    string
   resetExpire?:  string
+  resetTries?:   number
 }
 
 export interface PublicUser {

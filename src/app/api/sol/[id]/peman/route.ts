@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@/lib/auth'
+import { getAuthUser } from '@/lib/auth'
+import { canSeeSol } from '@/lib/access'
 import { readJSON, writeJSON, genId } from '@/lib/db'
-import type { Sol, Peman } from '@/lib/types'
+import type { Sol, Peman, MetòdPeman } from '@/lib/types'
+
+const METOD: MetòdPeman[] = ['cash', 'moncash', 'natcash', 'lajan-men']
 
 async function getSols()   { return readJSON<Sol[]>('sols.json', []) }
 async function getPeman()  { return readJSON<Peman[]>('peman.json', []) }
@@ -9,12 +12,12 @@ async function savePeman(p: Peman[]) { await writeJSON('peman.json', p) }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const token = req.headers.get('authorization')?.replace('Bearer ','')
-  const user  = token ? verifyToken(token) : null
+  const user = await getAuthUser(req)
   if (!user) return NextResponse.json({ error: 'Pa otorize' }, { status: 401 })
 
   const sol = (await getSols()).find(s => s.id === id)
   if (!sol) return NextResponse.json({ error: 'Sol pa jwenn' }, { status: 404 })
+  if (!canSeeSol(user, sol)) return NextResponse.json({ error: 'Pa otorize' }, { status: 403 })
 
   const url    = new URL(req.url)
   const peryòd = url.searchParams.get('peryod')
@@ -35,8 +38,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const token = req.headers.get('authorization')?.replace('Bearer ','')
-  const user  = token ? verifyToken(token) : null
+  const user = await getAuthUser(req)
   if (!user) return NextResponse.json({ error: 'Pa otorize' }, { status: 401 })
 
   const sols = await getSols()
@@ -53,7 +55,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const manm = entryId 
     ? sol.manm.find(m => m.entryId === entryId)
     : sol.manm.find(m => m.userId === userId)
-  if (!manm) return NextResponse.json({ error: 'Moun sa a pa nan sol la' }, { status: 404 })
+  if (!manm || manm.userId !== userId) return NextResponse.json({ error: 'Moun sa a pa nan sol la' }, { status: 404 })
+  if (!METOD.includes(metòd)) return NextResponse.json({ error: 'Metòd peman pa valid' }, { status: 400 })
+  const p = Number(peryòd)
+  if (!Number.isInteger(p) || p < 1 || p > Math.max(sol.maxManm, sol.manm.length))
+    return NextResponse.json({ error: 'Peryòd pa valid' }, { status: 400 })
 
   const peman  = await getPeman()
   const exists = entryId

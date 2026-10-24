@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Coins, Users, Calendar, FileText, UserPlus, Trash2, Check, Phone, User } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
-import { getCookie, getInitials } from '@/lib/utils'
+import { getCookie, AUTH_COOKIE, getInitials } from '@/lib/utils'
 
 const COLORS = ['#FF3DA0','#A855F7','#38BDF8','#34D399','#FCD34D','#FB923C']
 
@@ -37,10 +37,10 @@ export default function KreyeSolPage() {
   async function createSol() {
     setErr(''); setSubmitting(true)
     try {
-      const token = getCookie('sol_token')
+      const token = getCookie(AUTH_COOKIE)
       const res = await fetch('/api/sol', {
         method:'POST',
-        headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` },
+        headers:{ 'Content-Type':'application/json' },
         body: JSON.stringify({ ...form, montant:Number(form.montant), maxManm:Number(form.maxManm) }),
       })
       const data = await res.json()
@@ -55,10 +55,10 @@ export default function KreyeSolPage() {
     if (!solId || !newManm.prenom || !newManm.nom || !newManm.telefon) return
     setAddingManm(true); setAddMsg('')
     try {
-      const token = getCookie('sol_token')
+      const token = getCookie(AUTH_COOKIE)
       const res = await fetch(`/api/sol/${solId}/manm`, {
         method:'POST',
-        headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` },
+        headers:{ 'Content-Type':'application/json' },
         body: JSON.stringify({ prenom:newManm.prenom, nom:newManm.nom, telefon:newManm.telefon, pozisyon:newManm.pozisyon || 0 }),
       })
       const data = await res.json()
@@ -228,7 +228,7 @@ export default function KreyeSolPage() {
             <div className="glass rounded-2xl p-4 border border-green-500/20 flex items-start gap-3">
               <Check size={20} style={{ color:'#34D399', flexShrink:0, marginTop:1 }} />
               <div>
-                <p className="text-white font-bold text-sm">Sol "{form.nom}" kreye!</p>
+                <p className="text-white font-bold text-sm">Sol &ldquo;{form.nom}&rdquo; kreye!</p>
                 <p className="text-white/50 text-xs mt-0.5">Kounye a ajoute manm yo. Sistèm nan ap kreye yon kont otomatikman pou chak moun.</p>
               </div>
             </div>
@@ -304,7 +304,7 @@ export default function KreyeSolPage() {
             {addedManm.some(m => m.tempPass) && (
               <div className="glass rounded-2xl p-4 border border-yellow-500/20 space-y-1">
                 <p className="text-yellow-400 text-xs font-bold">⚠️ Modpas Pwovizoua</p>
-                <p className="text-white/50 text-xs">Kont yo kreye otomatikman. Modpas chak moun se <strong>4 dènye chif telefòn yo</strong>. Di yo chanje l aprè yo konekte.</p>
+                <p className="text-white/50 text-xs">Kont yo kreye otomatikman. Chak moun resevwa yon <strong>modpas pwovizwa 6 chif</strong> ki parèt anba non yo. Di yo chanje l aprè yo konekte.</p>
               </div>
             )}
 

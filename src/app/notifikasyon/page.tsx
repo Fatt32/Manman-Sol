@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Bell, Crown, CheckCircle, AlertCircle, Coins, Check } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { getCookie, fmtDate } from '@/lib/utils'
+import { getCookie, AUTH_COOKIE, fmtDate } from '@/lib/utils'
 import type { Notification } from '@/lib/types'
 
 const TYPE_CONFIG: Record<string, { icon: React.ComponentType<{size?:number;style?:React.CSSProperties}>, color: string, bg: string }> = {
@@ -21,19 +21,19 @@ export default function NotifPage() {
   const [fetching, setFetching] = useState(true)
 
   useEffect(() => {
-    const token = getCookie('sol_token')
+    const token = getCookie(AUTH_COOKIE)
     if (!token) return
-    fetch('/api/notifications', { headers:{ Authorization:`Bearer ${token}` } })
+    fetch('/api/notifications')
       .then(r => r.json())
       .then(d => setNotifs(d.notifs || []))
       .finally(() => setFetching(false))
   }, [])
 
   async function markAllRead() {
-    const token = getCookie('sol_token')
+    const token = getCookie(AUTH_COOKIE)
     if (!token) return
     await fetch('/api/notifications', {
-      method:'PUT', headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json' },
+      method:'PUT', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({}),
     })
     setNotifs(n => n.map(x => ({ ...x, li: true })))

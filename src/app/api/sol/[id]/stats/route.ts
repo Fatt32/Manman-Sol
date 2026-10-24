@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@/lib/auth'
+import { getAuthUser } from '@/lib/auth'
+import { canSeeSol } from '@/lib/access'
 import { readJSON } from '@/lib/db'
 import type { Sol, Peman } from '@/lib/types'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const token = req.headers.get('authorization')?.replace('Bearer ','')
-  const user  = token ? verifyToken(token) : null
+  const user = await getAuthUser(req)
   if (!user) return NextResponse.json({ error: 'Pa otorize' }, { status: 401 })
 
   const [sols, allPeman] = await Promise.all([
@@ -16,6 +16,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const sol = sols.find(s => s.id === id)
   if (!sol) return NextResponse.json({ error: 'Sol pa jwenn' }, { status: 404 })
+  if (!canSeeSol(user, sol)) return NextResponse.json({ error: 'Pa otorize' }, { status: 403 })
 
   const peman = allPeman.filter(p => p.solId === id && p.peryòd === sol.peryòdAktif)
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken, readUsers, writeUsers, hashPassword } from '@/lib/auth'
+import { getAuthUser, readUsers, writeUsers, hashPassword, findUserByPhone, randomCode } from '@/lib/auth'
 import { readJSON, writeJSON, genId } from '@/lib/db'
 import type { Sol, SolManm, User, ToucheRecord } from '@/lib/types'
 
@@ -8,8 +8,7 @@ async function saveSols(s: Sol[]) { await writeJSON('sols.json', s) }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const token = req.headers.get('authorization')?.replace('Bearer ','')
-  const user  = token ? verifyToken(token) : null
+  const user = await getAuthUser(req)
   if (!user) return NextResponse.json({ error: 'Pa otorize' }, { status: 401 })
 
   const sols = await getSols()
@@ -50,8 +49,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'prenom, nom, telefon obligatwa' }, { status: 400 })
 
     const users  = await readUsers()
-    const norm   = (t: string) => t.replace(/\D/g,'').slice(-8)
-    const exists = users.find(u => norm(u.telefon) === norm(telefon))
+    const exists = findUserByPhone(users, telefon)
 
     if (exists) {
       targetUserId  = exists.id
@@ -59,9 +57,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       targetNom     = exists.nom
       targetTelefon = exists.telefon
     } else {
-      const last4  = telefon.replace(/\D/g,'').slice(-4) || '1234'
-      tempPassword = last4
-      const hashed = await hashPassword(last4)
+      /* Random temporary password: the last digits of a phone number are easy to guess */
+      tempPassword = randomCode()
+      const hashed = await hashPassword(tempPassword)
       const newUser: User = {
         id: genId(), prenom, nom, telefon,
         password: hashed, role: 'manm',
@@ -97,15 +95,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     sol,
     tempPassword,
     message: tempPassword
-      ? `Kont kreye. Modpas pwovizoua: ${tempPassword} (dènye 4 chif telefòn nan)`
+      ? `Kont kreye. Modpas pwovizwa: ${tempPassword}. Bay manm nan li epi mande l chanje l nan Pwofil.`
       : 'Plas ajoute avèk siksè',
   }, { status: 201 })
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const token = req.headers.get('authorization')?.replace('Bearer ','')
-  const user  = token ? verifyToken(token) : null
+  const user = await getAuthUser(req)
   if (!user) return NextResponse.json({ error: 'Pa otorize' }, { status: 401 })
 
   const { entryId } = await req.json()
