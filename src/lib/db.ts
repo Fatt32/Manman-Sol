@@ -1,6 +1,7 @@
 import { Redis } from '@upstash/redis'
 import fs   from 'fs'
 import path from 'path'
+import { randomBytes } from 'crypto'
 
 const DATA_DIR = path.join(process.cwd(), 'data')
 
@@ -13,6 +14,10 @@ function makeRedis(): Redis | null {
 }
 
 const redis = makeRedis()
+
+export function getRedis(): Redis | null {
+  return redis
+}
 
 export async function readJSON<T>(key: string, fallback: T): Promise<T> {
   if (redis) {
@@ -40,5 +45,5 @@ export async function writeJSON<T>(key: string, data: T): Promise<void> {
 }
 
 export function genId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
+  return Date.now().toString(36) + randomBytes(4).toString('hex').slice(0, 5)
 }

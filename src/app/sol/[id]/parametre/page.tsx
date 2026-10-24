@@ -9,7 +9,7 @@ import {
   ToggleLeft, ToggleRight, Settings, Coins, Users, Calendar,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { getCookie, fmtMontan } from '@/lib/utils'
+import { getCookie, AUTH_COOKIE, fmtMontan } from '@/lib/utils'
 import type { Sol, SolStatus, Frequence, Devis } from '@/lib/types'
 
 const FREQUENCES: [Frequence, string][] = [
@@ -51,12 +51,12 @@ export default function ParametrePage({ params }: { params: Promise<{ id: string
   const [delConfirm, setDelConfirm] = useState(false)
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
 
-  const token = getCookie('sol_token')
-  const h = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+  const token = getCookie(AUTH_COOKIE)
+  const h = { 'Content-Type': 'application/json' }
 
   useEffect(() => {
     if (!token) return
-    fetch(`/api/sol/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`/api/sol/${id}`)
       .then(r => r.json())
       .then(d => {
         if (!d.sol) return

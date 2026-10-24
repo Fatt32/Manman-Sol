@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken, readUsers, toPublic, writeUsers, hashPassword } from '@/lib/auth'
+import { getAuthUser, readUsers, toPublic, writeUsers, hashPassword, findUserByPhone, MIN_PASSWORD } from '@/lib/auth'
+import type { UserRole } from '@/lib/types'
+
+const ROLES: UserRole[] = ['admin', 'chef', 'manm']
 
 export async function GET(req: NextRequest) {
-  const token = req.headers.get('authorization')?.replace('Bearer ','')
-  const user  = token ? verifyToken(token) : null
+  const user = await getAuthUser(req)
   if (!user) return NextResponse.json({ error: 'Pa otorize' }, { status: 401 })
   if (user.role !== 'admin' && user.role !== 'chef')
     return NextResponse.json({ error: 'Pa otorize' }, { status: 403 })
@@ -20,8 +22,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const token = req.headers.get('authorization')?.replace('Bearer ','')
-  const caller = token ? verifyToken(token) : null
+  const caller = await getAuthUser(req)
   if (!caller) return NextResponse.json({ error: 'Pa otorize' }, { status: 401 })
   if (caller.role !== 'admin')
     return NextResponse.json({ error: 'Sèlman admin ka modifye lòt itilizatè yo' }, { status: 403 })
@@ -37,15 +38,23 @@ export async function PUT(req: NextRequest) {
 
   if (prenom?.trim()) users[idx].prenom = prenom.trim()
   if (nom?.trim())    users[idx].nom    = nom.trim()
-  if (role)           users[idx].role   = role
-  if (blocked !== undefined) users[idx].blocked = blocked
+  if (role !== undefined) {
+    if (!ROLES.includes(role)) return NextResponse.json({ error: 'Wòl pa valid' }, { status: 400 })
+    users[idx].role = role
+  }
+  if (blocked !== undefined) users[idx].blocked = blocked === true
 
   if (telefon?.trim()) {
+    const taken = findUserByPhone(users, telefon)
+    if (taken && taken.id !== id)
+      return NextResponse.json({ error: 'Nimewo sa a deja egziste' }, { status: 409 })
     users[idx].telefon = telefon.trim()
   }
 
-  if (password && password.trim().length >= 4) {
-    users[idx].password = await hashPassword(password)
+  if (password) {
+    if (String(password).trim().length < MIN_PASSWORD)
+      return NextResponse.json({ error: `Modpas dwe gen ${MIN_PASSWORD} karaktè minimum` }, { status: 400 })
+    users[idx].password = await hashPassword(String(password))
   }
 
   await writeUsers(users)

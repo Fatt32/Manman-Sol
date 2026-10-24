@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Home, Users, PlusCircle, Settings, LogOut, Coins, Bell } from 'lucide-react'
-import { deleteCookie, getCookie } from '@/lib/utils'
+import { getCookie, AUTH_COOKIE, logout } from '@/lib/utils'
 
 const NAV = [
   { href:'/dashboard', icon:Home,       label:'Akèy'   },
@@ -21,10 +21,10 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
-    const token = getCookie('sol_token')
+    const token = getCookie(AUTH_COOKIE)
     if (!token) return
     const check = () =>
-      fetch('/api/notifications', { headers:{ Authorization:`Bearer ${token}` } })
+      fetch('/api/notifications')
         .then(r => r.json()).then(d => setUnread(d.unread ?? 0)).catch(() => {})
     check()
     const iv = setInterval(check, 60_000)
@@ -37,8 +37,8 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  function logout() {
-    deleteCookie('sol_token')
+  async function handleLogout() {
+    await logout()
     router.push('/koneksyon')
   }
 
@@ -95,7 +95,7 @@ export default function Navbar() {
                 </span>
               )}
             </Link>
-            <button onClick={logout} className="text-white/40 hover:text-white/80 transition-colors p-1.5 rounded-lg hover:bg-white/5">
+            <button onClick={handleLogout} className="text-white/40 hover:text-white/80 transition-colors p-1.5 rounded-lg hover:bg-white/5">
               <LogOut size={18} />
             </button>
           </div>

@@ -8,7 +8,7 @@ import {
   CheckCircle, Clock, AlertCircle, BadgeCheck, Bell, X, Settings,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { getCookie, fmtMontan, fmtFrequence, fmtDate, fmtPeryod, getInitials, getPeryodKouran, pwochènDatePeman, dateLimitPeryod } from '@/lib/utils'
+import { getCookie, AUTH_COOKIE, fmtMontan, fmtFrequence, fmtDate, fmtPeryod, getInitials, getPeryodKouran, pwochènDatePeman, dateLimitPeryod } from '@/lib/utils'
 import type { Sol, Peman, ToucheRecord, SolManm } from '@/lib/types'
 
 const COLORS = ['#FF3DA0','#A855F7','#38BDF8','#34D399','#FCD34D','#FB923C']
@@ -33,9 +33,9 @@ export default function SolDetailPage({ params }: { params: Promise<{ id: string
   const [toucheMsg, setToucheMsg]     = useState<string | null>(null)
 
   const refetchData = () => {
-    const token = getCookie('sol_token')
+    const token = getCookie(AUTH_COOKIE)
     if (!token) return
-    const h = { Authorization: `Bearer ${token}` }
+    const h = { }
     Promise.all([
       fetch(`/api/sol/${id}`, { headers: h }).then(r => r.json()),
       fetch(`/api/sol/${id}/peman`, { headers: h }).then(r => r.json()),
@@ -50,13 +50,13 @@ export default function SolDetailPage({ params }: { params: Promise<{ id: string
   }
 
   async function handleMarkPaid(userId: string, entryId: string, peryod: number) {
-    const token = getCookie('sol_token')
+    const token = getCookie(AUTH_COOKIE)
     if (!token) return
     try {
       const res = await fetch(`/api/sol/${id}/peman`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
+          
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ userId, entryId, peryòd: peryod, metòd: 'cash', note: 'Marked paid from delay alerts' })
@@ -73,13 +73,13 @@ export default function SolDetailPage({ params }: { params: Promise<{ id: string
   }
 
   async function handleConfirmPayout(userId: string, peryod: number) {
-    const token = getCookie('sol_token')
+    const token = getCookie(AUTH_COOKIE)
     if (!token) return
     try {
       const res = await fetch(`/api/sol/${id}/touche`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
+          
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ action: 'admin-konfime', peryòd: peryod, userId, metòd: 'cash', note: 'Marked payout from delay alerts' })
@@ -232,12 +232,12 @@ export default function SolDetailPage({ params }: { params: Promise<{ id: string
 
   async function konfimeTouche(targetUserId: string, peryod: number) {
     setToucheSaving(true)
-    const token = getCookie('sol_token')
+    const token = getCookie(AUTH_COOKIE)
     const action = isChef ? 'admin-konfime' : 'konfime'
     try {
       const res = await fetch(`/api/sol/${id}/touche`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, peryòd: peryod, userId: targetUserId, metòd: toucheMetod, note: toucheNote }),
       })
       const data = await res.json()
@@ -247,7 +247,7 @@ export default function SolDetailPage({ params }: { params: Promise<{ id: string
         return
       }
       /* Reload touche records from server to guarantee UI reflects saved state */
-      const freshRes = await fetch(`/api/sol/${id}/touche`, { headers: { Authorization: `Bearer ${token}` } })
+      const freshRes = await fetch(`/api/sol/${id}/touche`)
       const freshData = await freshRes.json()
       if (freshData.records) setTouche(freshData.records)
 

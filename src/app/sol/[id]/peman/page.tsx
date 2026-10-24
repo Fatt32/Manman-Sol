@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, CheckCircle, Clock, Plus, X, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { getCookie, fmtMontan, fmtDate, fmtPeryod, getInitials } from '@/lib/utils'
+import { getCookie, AUTH_COOKIE, fmtMontan, fmtDate, fmtPeryod, getInitials } from '@/lib/utils'
 import type { Sol, Peman, SolManm } from '@/lib/types'
 
 const COLORS = ['#FF3DA0','#A855F7','#38BDF8','#34D399','#FCD34D','#FB923C']
@@ -23,14 +23,14 @@ export default function PemanPage({ params }: { params: Promise<{ id: string }> 
   const [saving, setSaving] = useState(false)
   const [stats, setStats]   = useState({ paid: 0, total: 0, amount: 0 })
 
-  const token = getCookie('sol_token')
-  const h = { Authorization: `Bearer ${token}`, 'Content-Type':'application/json' }
+  const token = getCookie(AUTH_COOKIE)
+  const h = { 'Content-Type':'application/json' }
 
   function load() {
     if (!token) return
-    fetch(`/api/sol/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`/api/sol/${id}`)
       .then(r => r.json()).then(d => { if (d.sol) { setSol(d.sol); setPeryòd(d.sol.peryòdAktif) } })
-    fetch(`/api/sol/${id}/peman`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`/api/sol/${id}/peman`)
       .then(r => r.json()).then(d => setPeman(d.peman || []))
   }
 

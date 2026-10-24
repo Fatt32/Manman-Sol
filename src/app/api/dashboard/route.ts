@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@/lib/auth'
+import { getAuthUser } from '@/lib/auth'
 import { readJSON } from '@/lib/db'
 import type { Sol, Peman } from '@/lib/types'
 
 export async function GET(req: NextRequest) {
-  const token = req.headers.get('authorization')?.replace('Bearer ','')
-  const user  = token ? verifyToken(token) : null
+  const user = await getAuthUser(req)
   if (!user) return NextResponse.json({ error: 'Pa otorize' }, { status: 401 })
 
   const [allSols, allPeman] = await Promise.all([

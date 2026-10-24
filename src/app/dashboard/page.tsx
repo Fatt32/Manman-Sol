@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Coins, Users, TrendingUp, Clock, ChevronRight, PlusCircle, Crown, CheckCircle, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { getCookie, fmtMontan, fmtDate, pwochènDatePeman } from '@/lib/utils'
+import { getCookie, AUTH_COOKIE, fmtMontan, fmtDate, pwochènDatePeman } from '@/lib/utils'
 import type { Sol, Peman, ToucheRecord } from '@/lib/types'
 
 const COLORS = ['#FF3DA0','#A855F7','#38BDF8','#34D399','#FCD34D','#FB923C']
@@ -18,9 +18,9 @@ export default function DashboardPage() {
   } | null>(null)
 
   useEffect(() => {
-    const token = getCookie('sol_token')
+    const token = getCookie(AUTH_COOKIE)
     if (!token) return
-    fetch('/api/dashboard', { headers: { Authorization:`Bearer ${token}` } })
+    fetch('/api/dashboard')
       .then(r => r.json()).then(setData)
   }, [])
 
@@ -109,7 +109,7 @@ function AdminView({ data }: { data: { aktif:number; konplè:number; totalSols:n
 
 /* ── Member view (PRIVATE — no other names shown) ───────────────────────── */
 function ManmView({ user, sols }: { user: { id:string; prenom:string; nom:string }, sols: Sol[] }) {
-  const token = getCookie('sol_token')
+  const token = getCookie(AUTH_COOKIE)
 
   return (
     <>
@@ -137,10 +137,10 @@ function SolCardManm({ sol, userId, token, idx }: { sol:Sol; userId:string; toke
   const [acting, setActing] = useState(false)
   const [msg,    setMsg]    = useState('')
 
-  const h = { Authorization:`Bearer ${token}` }
+  const h = { }
 
   const loadTouche = useCallback(() => {
-    fetch(`/api/sol/${sol.id}/touche`, { headers: { Authorization:`Bearer ${token}` } })
+    fetch(`/api/sol/${sol.id}/touche`)
       .then(r => r.json())
       .then(d => setTouche((d.records || []).filter((r: ToucheRecord) => r.userId === userId)))
   }, [sol.id, userId, token])
@@ -175,7 +175,7 @@ function SolCardManm({ sol, userId, token, idx }: { sol:Sol; userId:string; toke
     try {
       const res = await fetch(`/api/sol/${sol.id}/touche`, {
         method:'POST',
-        headers:{ Authorization:`Bearer ${token}`, 'Content-Type':'application/json' },
+        headers:{ 'Content-Type':'application/json' },
         body: JSON.stringify({ action: type, peryòd: pozisyon }),
       })
       const data = await res.json()

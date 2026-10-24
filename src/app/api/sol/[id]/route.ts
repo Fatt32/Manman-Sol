@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@/lib/auth'
+import { getAuthUser } from '@/lib/auth'
 import { readJSON, writeJSON, genId } from '@/lib/db'
+import { applySolUpdate } from '@/lib/sol-update'
 import type { Sol, ToucheRecord, Peman, TirajEvent, Notification } from '@/lib/types'
 
 async function getSols() { return readJSON<Sol[]>('sols.json', []) }
@@ -19,8 +20,7 @@ function normalizeSol(sol: Sol): Sol {
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const token = req.headers.get('authorization')?.replace('Bearer ','')
-  const user  = token ? verifyToken(token) : null
+  const user = await getAuthUser(req)
   if (!user) return NextResponse.json({ error: 'Pa otorize' }, { status: 401 })
 
   const rawSols = await getSols()
@@ -53,8 +53,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const token = req.headers.get('authorization')?.replace('Bearer ','')
-  const user  = token ? verifyToken(token) : null
+  const user = await getAuthUser(req)
   if (!user) return NextResponse.json({ error: 'Pa otorize' }, { status: 401 })
 
   const sols = await getSols()
@@ -64,18 +63,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (user.role !== 'admin' && sols[idx].chefId !== user.id)
     return NextResponse.json({ error: 'Pa otorize' }, { status: 403 })
 
-  const body = await req.json()
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { montant: _m, id: _id, createdAt: _ca, chefId: _c, chefNom: _cn, ...allowed } = body
-  sols[idx] = { ...sols[idx], ...allowed, id }
+  const body   = await req.json().catch(() => null)
+  const result = applySolUpdate(sols[idx], body)
+  if ('error' in result) return NextResponse.json({ error: result.error }, { status: 400 })
+  sols[idx] = result.sol
   await saveSols(sols)
   return NextResponse.json({ sol: sols[idx] })
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const token = req.headers.get('authorization')?.replace('Bearer ','')
-  const user  = token ? verifyToken(token) : null
+  const user = await getAuthUser(req)
   if (!user) return NextResponse.json({ error: 'Pa otorize' }, { status: 401 })
 
   const sols = await getSols()

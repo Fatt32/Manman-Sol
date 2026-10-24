@@ -8,7 +8,7 @@ import {
   Pencil, Check, X, Lock, GripVertical, Save, ChevronRight,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { getCookie, getInitials } from '@/lib/utils'
+import { getCookie, AUTH_COOKIE, getInitials } from '@/lib/utils'
 import type { Sol, SolManm, ToucheRecord } from '@/lib/types'
 
 const COLORS = ['#FF3DA0','#A855F7','#38BDF8','#34D399','#FCD34D','#FB923C']
@@ -52,8 +52,8 @@ export default function ManmPage({ params }: { params: Promise<{ id: string }> }
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null)
   const [removing, setRemoving]         = useState(false)
 
-  const token = getCookie('sol_token')
-  const authH = { Authorization:`Bearer ${token}`, 'Content-Type':'application/json' }
+  const token = getCookie(AUTH_COOKIE)
+  const authH = { 'Content-Type':'application/json' }
 
   const applySol = useCallback((s: Sol) => {
     setSol(s)
@@ -63,7 +63,7 @@ export default function ManmPage({ params }: { params: Promise<{ id: string }> }
 
   useEffect(() => {
     if (!token) return
-    const h = { Authorization:`Bearer ${token}` }
+    const h = { }
     Promise.all([
       fetch(`/api/sol/${id}`, { headers: h }).then(r => r.json()),
       fetch(`/api/sol/${id}/touche`, { headers: h }).then(r => r.json()),

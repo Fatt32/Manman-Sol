@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getCookie } from '@/lib/utils'
+import { getCookie, AUTH_COOKIE } from '@/lib/utils'
 import type { PublicUser } from '@/lib/types'
 
 export function useAuth(redirect = true) {
@@ -11,13 +11,13 @@ export function useAuth(redirect = true) {
   const router = useRouter()
 
   useEffect(() => {
-    const token = getCookie('sol_token')
+    const token = getCookie(AUTH_COOKIE)
     if (!token) {
       if (redirect) router.replace('/koneksyon')
       setLoading(false)
       return
     }
-    fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+    fetch('/api/auth/me')
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data) {

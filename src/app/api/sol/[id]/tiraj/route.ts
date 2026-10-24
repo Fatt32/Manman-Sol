@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@/lib/auth'
+import { randomInt } from 'crypto'
+import { getAuthUser } from '@/lib/auth'
+import { canSeeSol, canManageSol } from '@/lib/access'
 import { readJSON, writeJSON, genId } from '@/lib/db'
 import type { Sol, TirajEvent } from '@/lib/types'
 
@@ -10,8 +12,7 @@ async function saveTiraj(t: TirajEvent[]) { await writeJSON('tiraj.json', t) }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const token = req.headers.get('authorization')?.replace('Bearer ','')
-  const user  = token ? verifyToken(token) : null
+  const user = await getAuthUser(req)
   if (!user) return NextResponse.json({ error: 'Pa otorize' }, { status: 401 })
 
   const sols = await getSols()
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   /* Fisher-Yates shuffle */
   const shuffled = [...sol.manm]
   for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = randomInt(i + 1);
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
   }
 
@@ -67,10 +68,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const token = req.headers.get('authorization')?.replace('Bearer ','')
-  const user  = token ? verifyToken(token) : null
+  const user = await getAuthUser(req)
   if (!user) return NextResponse.json({ error: 'Pa otorize' }, { status: 401 })
 
+  const sol = (await getSols()).find(s => s.id === id)
+  if (!sol) return NextResponse.json({ error: 'Sol pa jwenn' }, { status: 404 })
+  if (!canSeeSol(user, sol)) return NextResponse.json({ error: 'Pa otorize' }, { status: 403 })
+
   const tiraj = (await getTiraj()).filter(t => t.solId === id)
-  return NextResponse.json({ tiraj })
+  /* Same privacy rule as the sol itself: members only see their own name */
+  const visible = canManageSol(user, sol) ? tiraj : tiraj.map(t => ({
+    ...t,
+    fèpa: '',
+    rezilta: t.rezilta.map(r => r.userId === user.id ? r : { ...r, prenom: 'Manm', nom: `#${r.pozisyon}` }),
+  }))
+  return NextResponse.json({ tiraj: visible })
 }

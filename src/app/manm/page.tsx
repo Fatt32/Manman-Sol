@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Search, Users } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { getCookie, getInitials, fmtDate } from '@/lib/utils'
+import { getCookie, AUTH_COOKIE, getInitials, fmtDate } from '@/lib/utils'
 import type { PublicUser } from '@/lib/types'
 
 const COLORS = ['#FF3DA0','#A855F7','#38BDF8','#34D399','#FCD34D','#FB923C']
@@ -17,17 +17,17 @@ export default function ManmListPage() {
   const [q, setQ]         = useState('')
 
   useEffect(() => {
-    const token = getCookie('sol_token')
+    const token = getCookie(AUTH_COOKIE)
     if (!token) return
-    fetch(`/api/users`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`/api/users`)
       .then(r => r.json()).then(d => setUsers(d.users || []))
   }, [])
 
   useEffect(() => {
-    const token = getCookie('sol_token')
+    const token = getCookie(AUTH_COOKIE)
     if (!token || q.length < 2) return
     const t = setTimeout(() => {
-      fetch(`/api/users?q=${encodeURIComponent(q)}`, { headers: { Authorization: `Bearer ${token}` } })
+      fetch(`/api/users?q=${encodeURIComponent(q)}`)
         .then(r => r.json()).then(d => setUsers(d.users || []))
     }, 400)
     return () => clearTimeout(t)

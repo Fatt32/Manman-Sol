@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { User, Phone, Lock, Eye, EyeOff, Shield } from 'lucide-react'
 import AnimatedBg from '@/components/AnimatedBg'
-import { setCookie } from '@/lib/utils'
 
 export default function SetupPage() {
   const router = useRouter()
@@ -40,7 +39,6 @@ export default function SetupPage() {
       })
       const data = await res.json()
       if (!res.ok) { setErr(data.error); return }
-      setCookie('sol_token', data.token)
       router.push('/dashboard')
     } catch { setErr('Erè rezo') }
     finally { setLoading(false) }

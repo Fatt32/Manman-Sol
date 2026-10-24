@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Phone, Lock, Eye, EyeOff } from 'lucide-react'
 import AnimatedBg from '@/components/AnimatedBg'
-import { setCookie } from '@/lib/utils'
 
 export default function KoneksyonPage() {
   const router = useRouter()
@@ -27,7 +26,6 @@ export default function KoneksyonPage() {
       })
       const data = await res.json()
       if (!res.ok) { setErr(data.error || 'Erè koneksyon'); return }
-      setCookie('sol_token', data.token)
       router.push('/dashboard')
     } catch {
       setErr('Pa ka konekte. Verifye entènèt ou.')

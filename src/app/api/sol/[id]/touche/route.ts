@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@/lib/auth'
+import { getAuthUser } from '@/lib/auth'
+import { canSeeSol, canManageSol } from '@/lib/access'
 import { readJSON, writeJSON, genId } from '@/lib/db'
 import { addNotif, dateTouche } from '@/lib/notifications'
 import type { Sol, ToucheRecord } from '@/lib/types'
@@ -8,8 +9,7 @@ async function getSols() { return readJSON<Sol[]>('sols.json', []) }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const token = req.headers.get('authorization')?.replace('Bearer ','')
-  const user  = token ? verifyToken(token) : null
+  const user = await getAuthUser(req)
   if (!user) return NextResponse.json({ error: 'Pa otorize' }, { status: 401 })
 
   const body = await req.json()
@@ -138,12 +138,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const token = req.headers.get('authorization')?.replace('Bearer ','')
-  const user  = token ? verifyToken(token) : null
+  const user = await getAuthUser(req)
   if (!user) return NextResponse.json({ error: 'Pa otorize' }, { status: 401 })
 
   const sol = (await getSols()).find(s => s.id === id)
-  const isPrivileged = user.role === 'admin' || sol?.chefId === user.id
+  if (!sol) return NextResponse.json({ error: 'Sol pa jwenn' }, { status: 404 })
+  if (!canSeeSol(user, sol)) return NextResponse.json({ error: 'Pa otorize' }, { status: 403 })
+  const isPrivileged = canManageSol(user, sol)
   const records = await readJSON<ToucheRecord[]>('touche.json', [])
   const mine    = records.filter(r => r.solId === id && (isPrivileged || r.userId === user.id))
   return NextResponse.json({ records: mine })
